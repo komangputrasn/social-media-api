@@ -1,17 +1,10 @@
-import express, {
-  Application,
-  Request,
-  Response,
-  NextFunction,
-  Router,
-} from "express";
 import cors from "cors";
+import dotenv from "dotenv";
+import express, { Application } from "express";
 import helmet from "helmet";
 import morgan from "morgan";
-import dotenv from "dotenv";
 import utilsHandlers from "./handlers/utilsHandler";
 import authRoute from "./routes/authRoute";
-import bodyParser from "body-parser";
 
 // Load environment variables
 dotenv.config();
