@@ -2,8 +2,9 @@ import connection from "@/helpers/db";
 import bcrypt from "bcrypt";
 import { Request, Response } from "express";
 import { validationResult } from "express-validator";
-import jwt, { JwtPayload } from "jsonwebtoken";
-import { FieldPacket, ResultSetHeader } from "mysql2";
+import jwt, { JwtPayload, TokenExpiredError } from "jsonwebtoken";
+import { FieldPacket, ResultSetHeader, RowDataPacket } from "mysql2";
+import { v4 as uuidv4 } from "uuid";
 
 const login = async (
   request: Request<{}, {}, LoginBody>,
@@ -22,7 +23,7 @@ const login = async (
 
   const [userResult] = await connection
     .query("select * from account where email = ?", [email])
-    .then((res) => res as [any[], FieldPacket[]]);
+    .then((res) => res as [RowDataPacket[], FieldPacket[]]);
 
   const isPasswordMatch = await bcrypt.compare(
     password,
@@ -38,7 +39,7 @@ const login = async (
 
   const accessToken = jwt.sign(
     {
-      email,
+      userId: userResult[0].id,
     },
     process.env.ACCESS_TOKEN_SECRET as string,
     {
@@ -48,18 +49,12 @@ const login = async (
 
   const refreshToken = jwt.sign(
     {
-      email,
+      userId: userResult[0].id,
     },
     process.env.REFRESH_TOKEN_SECRET as string,
     {
       expiresIn: "1h",
     }
-  );
-
-  // insert into access token tables
-  await connection.query(
-    "insert into refresh_token (email, refresh_token) values (?, ?)",
-    [email, refreshToken]
   );
 
   response.json({
@@ -85,9 +80,10 @@ const register = async (
   const { email, password } = request.body;
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
+  const postId = uuidv4();
   const insertResult = connection.query(
-    "insert into account (email, password) values (?, ?)",
-    [email, hashedPassword]
+    "insert into account (id, email, password) values (?, ?, ?)",
+    [postId, email, hashedPassword]
   );
 
   response.json({
@@ -100,23 +96,42 @@ const accessToken = async (
   request: Request<{}, {}, AccessTokenBody>,
   response: Response
 ) => {
+  const result = validationResult(request);
+
+  if (!result.isEmpty()) {
+    response.status(400).json({
+      errors: result.array(),
+    });
+    return;
+  }
+
   const { refreshToken } = request.body;
+  try {
+    const payload = jwt.verify(
+      refreshToken,
+      process.env.REFRESH_TOKEN_SECRET as string
+    ) as JwtPayload;
 
-  const payload = jwt.verify(
-    refreshToken,
-    process.env.REFRESH_TOKEN_SECRET as string
-  ) as JwtPayload;
+    const accessToken = jwt.sign(
+      {
+        email: payload.email,
+      },
+      process.env.ACCESS_TOKEN_SECRET as string
+    );
 
-  const accessToken = jwt.sign(
-    {
-      email: payload.email,
-    },
-    process.env.ACCESS_TOKEN_SECRET as string
-  );
-
-  response.json({
-    accessToken,
-  });
+    response.json({
+      accessToken,
+    });
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      response.status(401).json({
+        message: "Refresh token has expired",
+        expiredAt: error.expiredAt,
+      });
+      return;
+    }
+    throw error;
+  }
 };
 
 const root = (request: Request, response: Response) => {

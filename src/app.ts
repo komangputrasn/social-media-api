@@ -5,6 +5,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import utilsHandlers from "./handlers/utilsHandler";
 import authRoute from "./routes/authRoute";
+import profileRoute from "./routes/profileRoute";
 
 // Load environment variables
 dotenv.config();
@@ -21,6 +22,7 @@ app.use(express.json({ limit: "10mb" })); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
 app.use("/auth", authRoute);
+app.use("/profile", profileRoute);
 
 // Basic route
 app.get("/", utilsHandlers.root);

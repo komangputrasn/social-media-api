@@ -1,9 +1,6 @@
-import authHandler from "@/handlers/authHandler";
-import connection from "@/helpers/db";
+import authHandler from "@/handlers/auth/authHandler";
 import authValidator from "@/validators/authValidator";
-import { RequestHandler, Router } from "express";
-import { body } from "express-validator";
-import { FieldPacket } from "mysql2";
+import { Router } from "express";
 
 const authRoute = Router();
 

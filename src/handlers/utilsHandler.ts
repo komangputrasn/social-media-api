@@ -2,8 +2,6 @@ import connection from "@/helpers/db";
 import { NextFunction, Request, Response } from "express";
 
 const root = async (req: Request, res: Response) => {
-  const queryResult = await connection.query("SELECT * FROM account");
-  console.log("Results: ", queryResult);
   res.json({
     message: "Welcome to Social Media API!",
     timestamp: new Date().toISOString(),
