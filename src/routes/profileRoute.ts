@@ -13,4 +13,6 @@ profileRoute.post(
   profileHandler.createProfile
 );
 
+profileRoute.get("/:user_id", verifyToken, profileHandler.profileDetails);
+
 export default profileRoute;

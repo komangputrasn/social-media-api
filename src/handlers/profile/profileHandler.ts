@@ -33,6 +33,26 @@ const createProfile = async (
   });
 };
 
+const profileDetails = async (
+  request: Request<{ user_id: string }, {}, CreateProfileBody>,
+  response: Response
+) => {
+  const [detail] = await connection.query(
+    "select * from account_detail where account_id = ?",
+    [request.params["user_id"]]
+  );
+
+  if (detail.length == 0) {
+    response.status(404).json({
+      message: `User for id = ${request.params["user_id"]} not found`,
+    });
+    return;
+  }
+
+  response.json(detail[0]);
+};
+
 export default {
   createProfile,
+  profileDetails,
 };

@@ -25,6 +25,15 @@ const login = async (
     .query("select * from account where email = ?", [email])
     .then((res) => res as [RowDataPacket[], FieldPacket[]]);
 
+  const userId = userResult.at(0)?.id;
+
+  // check whether or not the user has filled their personal details
+  const [detailResult] = await connection
+    .query("select * from account_detail where account_id = ?", [userId])
+    .then((res) => res as [RowDataPacket[], FieldPacket[]]);
+
+  const isPersonalDetailFilled = detailResult.length > 0;
+
   const isPasswordMatch = await bcrypt.compare(
     password,
     userResult[0].password
@@ -58,6 +67,7 @@ const login = async (
   );
 
   response.json({
+    isPersonalDetailFilled,
     message: "Login success!",
     accessToken,
     refreshToken: refreshToken,
