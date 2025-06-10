@@ -1,11 +1,12 @@
 import cors from "cors";
 import dotenv from "dotenv";
-import express, { Application } from "express";
+import express, { Application, Router } from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 import utilsHandlers from "./handlers/utilsHandler";
 import authRoute from "./routes/authRoute";
 import profileRoute from "./routes/profileRoute";
+import followRoute from "./routes/followRoute";
 
 // Load environment variables
 dotenv.config();
@@ -21,8 +22,13 @@ app.use(morgan("combined")); // Logging
 app.use(express.json({ limit: "10mb" })); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
-app.use("/auth", authRoute);
-app.use("/profile", profileRoute);
+// Root router
+const root = Router();
+root.use("/auth", authRoute);
+root.use("/profile", profileRoute);
+root.use("/follow", followRoute);
+
+app.use("/v1", root);
 
 // Basic route
 app.get("/", utilsHandlers.root);
